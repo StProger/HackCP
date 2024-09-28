@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:15
+    container_name: rutube_db
+    env_file:
+      - .env
+    restart: always
+    environment:
+      POSTGRES_DB: rutube_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: $2b$12$7u
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgresdata:/var/lib/postgresql/data
+    ports:
+      - 5435:5432
+
+
+  bot:
+#    image: alexbobr007/dockerhub:rutube
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    container_name: rutube_bot
+    depends_on:
+      db:
+        condition: service_started
+    command: ["/rutube_app/docker/bot.sh"]
+
+  app:
+    #image: alexbobr007/dockerhub:rutube
+    build:
+      context: .
+    env_file:
+      - .env
+    container_name: rutube_app
+    volumes:
+      - ./jobs.sqlite:/fblab_app/jobs.sqlite
+      - ./jobs_bot.sqlite:/fblab_app/jobs_bot.sqlite
+
+    depends_on:
+      db:
+        condition: service_started
+    command: ["/rutube_app/docker/app.sh"]
+    ports:
+      - 8000:8000
+
+
+volumes:
+  postgresdata:
+
